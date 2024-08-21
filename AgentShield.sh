@@ -1,72 +1,72 @@
 #!/bin/bash
 
-# ملف لتسجيل عناوين IP المحظورة
-blocked_ips_file="/var/log/blocked_ips.log"
+# Copyright (c) 2024 RAKAN ALYAMI. All rights reserved.
+# Contact: 
+# Email: rakan7777@gmail.com
+# Telegram: https://t.me/r7000r
 
-# اسأل المستخدم عن الـ User Agent الذي يريد السماح له
-read -p "Please enter the User Agent you want to allow: " allowed_user_agent
+# التحقق من تثبيت Nginx
+if ! command -v nginx &> /dev/null
+then
+    echo "Nginx is not installed. Please install Nginx first before running this script."
+    exit 1
+fi
 
-# إعداد جدار الحماية للسماح فقط بالـ User Agent المحدد على المنفذين 80 و 443
-iptables -A INPUT -p tcp --dport 80 -m string --string "$allowed_user_agent" --algo bm -j ACCEPT
-iptables -A INPUT -p tcp --dport 443 -m string --string "$allowed_user_agent" --algo bm -j ACCEPT
+# ملف السجل لتسجيل عناوين IP المحظورة و "User Agents"
+LOG_FILE="/var/log/blocked_ips.log"
+NGINX_CONF="/etc/nginx/conf.d/blocked_user_agents.conf"
 
-# إعداد جدار الحماية لتسجيل وحظر الزيارات غير المسموح بها
-iptables -A INPUT -p tcp --dport 80 -j LOG --log-prefix "Blocked: " --log-level 4
-iptables -A INPUT -p tcp --dport 443 -j LOG --log-prefix "Blocked: " --log-level 4
-iptables -A INPUT -p tcp --dport 80 -j DROP
-iptables -A INPUT -p tcp --dport 443 -j DROP
-
-echo "Firewall rules added. Only the specified User Agent is allowed on ports 80 and 443."
-
-# وظيفة لاستعراض الزيارات المحظورة
-function view_blocked {
-    echo "Blocked IPs:"
-    cat $blocked_ips_file
+# وظيفة لفتح جميع الزيارات (إعدادات افتراضية)
+function allow_all_access {
+    sudo rm -f $NGINX_CONF
+    sudo systemctl reload nginx
 }
 
-# وظيفة لإزالة الحظر عن IP محدد
-function unblock_ip {
-    read -p "Enter the IP address you want to unblock: " ip
-    iptables -D INPUT -s $ip -j DROP
-    sed -i "/$ip/d" $blocked_ips_file
-    echo "Unblocked IP: $ip"
+# وظيفة لحظر الوصول بناءً على User Agent عبر Nginx وتسجيله
+function block_by_user_agent {
+    read -p "Please enter the User Agent you want to block: " blocked_user_agent
+
+    sudo tee -a $NGINX_CONF > /dev/null <<EOL
+if (\$http_user_agent ~* "$blocked_user_agent") {
+    return 403;
+}
+EOL
+
+    sudo systemctl reload nginx
+
+    echo "Blocked User Agent: $blocked_user_agent" >> $LOG_FILE
 }
 
-# وظيفة لإزالة جميع القواعد عند حذف السكربت
+# وظيفة لإزالة جميع القواعد والحظر
 function remove_all_blocks {
-    echo "Removing all blocked IPs and firewall rules..."
-    while read -r ip; do
-        iptables -D INPUT -s $ip -j DROP
-    done < $blocked_ips_file
+    sudo rm -f $NGINX_CONF
+    sudo systemctl reload nginx
+    > $LOG_FILE
+}
 
-    # إزالة جميع القواعد الأخرى المتعلقة بالمنفذين 80 و 443
-    iptables -D INPUT -p tcp --dport 80 -m string --string "$allowed_user_agent" --algo bm -j ACCEPT
-    iptables -D INPUT -p tcp --dport 443 -m string --string "$allowed_user_agent" --algo bm -j ACCEPT
-    iptables -D INPUT -p tcp --dport 80 -j LOG --log-prefix "Blocked: " --log-level 4
-    iptables -D INPUT -p tcp --dport 443 -j LOG --log-prefix "Blocked: " --log-level 4
-    iptables -D INPUT -p tcp --dport 80 -j DROP
-    iptables -D INPUT -p tcp --dport 443 -j DROP
-
-    # حذف ملف الـ log الخاص بالـ IPs المحظورة
-    rm -f $blocked_ips_file
-
-    echo "All blocked IPs and firewall rules have been removed."
+# وظيفة لعرض الزيارات المحظورة
+function view_blocked_visits {
+    if [ -f "$LOG_FILE" ]; then
+        cat "$LOG_FILE"
+    fi
 }
 
 # عرض القائمة الرئيسية
 while true; do
     echo "Options:"
-    echo "1. View blocked IPs"
-    echo "2. Unblock an IP"
-    echo "3. Remove all blocks and firewall rules"
-    echo "4. Exit"
+    echo "1. Allow all access (default)"
+    echo "2. Block access by User Agent"
+    echo "3. View blocked visits"
+    echo "4. Remove all blocks and firewall rules"
+    echo "5. Exit"
     read -p "Choose an option: " option
 
     case $option in
-        1) view_blocked ;;
-        2) unblock_ip ;;
-        3) remove_all_blocks ;;
-        4) exit ;;
+        1) allow_all_access ;;
+        2) block_by_user_agent ;;
+        3) view_blocked_visits ;;
+        4) remove_all_blocks ;;
+        5) exit ;;
         *) echo "Invalid option. Please try again." ;;
     esac
 done
