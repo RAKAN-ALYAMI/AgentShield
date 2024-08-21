@@ -7,8 +7,9 @@
 
 # AgentShield
 
-AgentShield هو سكربت مصمم للتحكم في الوصول إلى الخادم بناءً على "User Agents". بشكل افتراضي، يسمح السكربت بجميع حركة المرور، ولكن يمكنك حظر "User Agents" محددة عند الحاجة باستخدام Nginx.
+السكربت AgentShield مصمم للتحكم في الوصول إلى السيرفرات بناءً على "User Agents". بشكل افتراضي، يسمح السكربت بجميع الزيارات، لكنه يوفر لك القدرة على حظر أجهزة أو متصفحات محددة عن طريق تحديد "User Agent". يعتمد السكربت على Nginx لإدارة حظر الوصول، ويمكنه عرض "User Agents" المحظورة أو إزالة القواعد وإعادة فتح الزيارات.
 
+The AgentShield script is designed to control server access based on "User Agents." By default, the script allows all traffic, but it provides the ability to block specific devices or browsers by specifying a "User Agent." The script relies on Nginx to manage access blocking, and it can display blocked "User Agents" or remove the rules to reopen access.
 ## Installation / التثبيت
 
 To install AgentShield, follow these steps:
