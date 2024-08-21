@@ -1,4 +1,4 @@
-![Block User_Agent](./block_user_agent.webp)
+![Block User_Agent](./block_user_agent.png)
 
 
 # AgentShield
