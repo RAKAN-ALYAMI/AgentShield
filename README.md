@@ -94,6 +94,14 @@ To completely remove AgentShield and its associated configurations:
    sudo rm -f /var/log/blocked_ips.log
    ```
 
+   
+## License | الرخصة
+
+This project is licensed under the MIT License.
+
+هذا المشروع مرخص تحت رخصة MIT.
+
+
 ## Contact / طرق التواصل
 
 For any questions or support, you can reach out to:
